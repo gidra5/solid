@@ -621,6 +621,34 @@ describe("catchError", () => {
     ).not.toThrow("fail");
     expect(errored).toBe(true);
   });
+
+  test("In memo chain", () => {
+    let cascaded = false;
+
+    expect(() => {
+      createRoot(() => {
+        const [errored, setErrored] = createSignal<any>();
+        return createMemo(() => {
+          const e = errored();
+          if (e) {
+            throw e;
+          }
+          return catchError(() => {
+            const throws = createMemo(() => {
+              throw "error";
+            });
+            return createMemo(() => {
+              throws();
+              cascaded = true;
+              throw "another";
+            });
+          }, setErrored);
+        });
+      });
+    }).toThrow("error");
+
+    expect(cascaded).toBe(false);
+  });
 });
 
 describe("createDeferred", () => {
